@@ -117,5 +117,10 @@ func (t Tuple) MatrixMultiply(m *Matrix) *Tuple {
 
 // Translate translates tuple by x, y, z
 func (t Tuple) Translate(x, y, z float64) *Tuple {
-	return t.MatrixMultiply(TranslationMatrix(x, y, z))
+	return t.MatrixMultiply(IdentityMatrix().Translate(x, y, z))
+}
+
+// Scale scales the tuple by x, y, z
+func (t Tuple) Scale(x, y, z float64) *Tuple {
+	return t.MatrixMultiply(IdentityMatrix().Scale(x, y, z))
 }

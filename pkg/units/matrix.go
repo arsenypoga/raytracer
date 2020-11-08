@@ -1,6 +1,9 @@
 package units
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // Matrix is a matrix /shrug
 type Matrix struct {
@@ -39,9 +42,9 @@ func DefaultMatrix(width, height int) *Matrix {
 }
 
 // Dot multiplies two matrieces returning a new matrix
-func (m Matrix) Dot(m1 *Matrix) (*Matrix, error) {
+func (m Matrix) Dot(m1 *Matrix) *Matrix {
 	if m.Width != m1.Height {
-		return nil, fmt.Errorf("Matrices need to be same size") // TODO: Provide accurate message, I am lazy lol
+		panic("Matrices need to be same size") // TODO: Provide accurate message, I am lazy lol
 	}
 
 	returnMatrix := DefaultMatrix(m1.Width, m.Height)
@@ -52,13 +55,13 @@ func (m Matrix) Dot(m1 *Matrix) (*Matrix, error) {
 			}
 		}
 	}
-	return returnMatrix, nil
+	return returnMatrix
 }
 
 // TupleMultiply Multiply Matrix by a Tuple resulting in a new Tuple
 func (m Matrix) TupleMultiply(t *Tuple) *Tuple {
 	tupleMatrix := NewMatrix([][]float64{{t.X}, {t.Y}, {t.Z}, {t.W}})
-	result, _ := m.Dot(tupleMatrix)
+	result := m.Dot(tupleMatrix)
 	return &Tuple{result.matrix[0][0], result.matrix[1][0], result.matrix[2][0], result.matrix[3][0]}
 }
 
@@ -115,6 +118,7 @@ func (m Matrix) Cofactor(i, j int) float64 {
 	return det
 }
 
+// Get reads the value at the given x and y
 func (m Matrix) Get(i, j int) float64 {
 	return m.matrix[i][j]
 }
@@ -164,14 +168,76 @@ func IdentityMatrix() *Matrix {
 	})
 }
 
-// TranslationMatrix translates the matrix with given coordinates
-func TranslationMatrix(x, y, z float64) *Matrix {
+// Translate translates the matrix with given coordinates
+func (m Matrix) Translate(x, y, z float64) *Matrix {
 	returnMatrix := IdentityMatrix()
+
 	returnMatrix.matrix[0][3] = x
 	returnMatrix.matrix[1][3] = y
 	returnMatrix.matrix[2][3] = z
 
-	return returnMatrix
+	return m.Dot(returnMatrix)
+}
+
+// Scale scales the matrix with the given coordinates
+func (m Matrix) Scale(x, y, z float64) *Matrix {
+	returnMatrix := IdentityMatrix()
+
+	returnMatrix.matrix[0][0] = x
+	returnMatrix.matrix[1][1] = y
+	returnMatrix.matrix[2][2] = z
+
+	return m.Dot(returnMatrix)
+}
+
+// RotateX rotates matrix on X axis by r radians
+func (m Matrix) RotateX(r float64) *Matrix {
+	returnMatrix := IdentityMatrix()
+
+	returnMatrix.matrix[1][1] = math.Cos(r)
+	returnMatrix.matrix[1][2] = -math.Sin(r)
+	returnMatrix.matrix[2][1] = math.Sin(r)
+	returnMatrix.matrix[2][2] = math.Cos(r)
+
+	return m.Dot(returnMatrix)
+}
+
+// RotateY rotates matrix on Y axis by r radians
+func (m Matrix) RotateY(r float64) *Matrix {
+	returnMatrix := IdentityMatrix()
+
+	returnMatrix.matrix[0][0] = math.Cos(r)
+	returnMatrix.matrix[0][2] = math.Sin(r)
+	returnMatrix.matrix[2][0] = -math.Sin(r)
+	returnMatrix.matrix[2][2] = math.Cos(r)
+
+	return m.Dot(returnMatrix)
+}
+
+// RotateZ rotates matrix on Z axis by r radians
+func (m Matrix) RotateZ(r float64) *Matrix {
+	returnMatrix := IdentityMatrix()
+
+	returnMatrix.matrix[0][0] = math.Cos(r)
+	returnMatrix.matrix[0][1] = -math.Sin(r)
+	returnMatrix.matrix[1][0] = math.Sin(r)
+	returnMatrix.matrix[1][1] = math.Cos(r)
+
+	return m.Dot(returnMatrix)
+}
+
+// Shear shears the matrix on given coordinates
+func (m Matrix) Shear(xy, xz, yx, yz, zx, zy float64) *Matrix {
+	returnMatrix := IdentityMatrix()
+
+	returnMatrix.matrix[0][1] = xy
+	returnMatrix.matrix[0][2] = xz
+	returnMatrix.matrix[1][0] = yx
+	returnMatrix.matrix[1][2] = yz
+	returnMatrix.matrix[2][0] = zx
+	returnMatrix.matrix[2][1] = zy
+
+	return m.Dot(returnMatrix)
 }
 
 // Equal compares two matrices
@@ -191,14 +257,21 @@ func (m Matrix) Equal(m1 *Matrix) bool {
 }
 
 func (m Matrix) String() string {
-	returnString := "Matrix("
+	returnString := "Matrix(["
 	for i := 0; i < m.Height; i++ {
 		returnString += "\n    ["
 		for j := 0; j < m.Width; j++ {
-			returnString += fmt.Sprintf("%f,", m.matrix[i][j])
+			returnString += fmt.Sprintf("%f", m.matrix[i][j])
+			if j != m.Width-1 {
+				returnString += ", "
+			}
 		}
-		returnString += "],"
+		if i != m.Height-1 {
+			returnString += "],"
+		} else {
+			returnString += "]"
+		}
 	}
-	returnString += "\n)"
+	returnString += "\n])"
 	return returnString
 }

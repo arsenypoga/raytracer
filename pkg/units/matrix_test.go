@@ -1,6 +1,7 @@
 package units
 
 import (
+	"math"
 	"reflect"
 	"testing"
 )
@@ -64,11 +65,10 @@ func TestMatrix_Dot(t *testing.T) {
 		m1 *Matrix
 	}
 	tests := []struct {
-		name    string
-		m       Matrix
-		args    args
-		want    *Matrix
-		wantErr bool
+		name string
+		m    Matrix
+		args args
+		want *Matrix
 	}{
 		{
 			"standard",
@@ -90,32 +90,11 @@ func TestMatrix_Dot(t *testing.T) {
 				{40, 58, 110, 102},
 				{16, 26, 46, 42},
 			}),
-			false,
-		},
-		{
-			"Different matrix size",
-			*NewMatrix([][]float64{
-				{1, 2, 3, 4},
-				{5, 6, 7, 8},
-				{9, 8, 7, 6},
-				{5, 4, 3, 2}}),
-			args{
-				NewMatrix([][]float64{
-					{-2, 1, 2, 3},
-					{3, 2, 1, -1},
-					{4, 3, 6, 5},
-				})},
-			nil,
-			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.m.Dot(tt.args.m1)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Matrix.Dot() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := tt.m.Dot(tt.args.m1)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Matrix.Dot() = %v, want %v", got, tt.want)
 			}
@@ -429,7 +408,7 @@ func TestMatrix_TupleMultiply(t *testing.T) {
 		args args
 		want *Tuple
 	}{
-		{"standard", *TranslationMatrix(5, -3, 2), args{NewPoint(-3, 4, 5)}, NewPoint(2, 1, 7)},
+		{"standard", *IdentityMatrix().Translate(5, -3, 2), args{NewPoint(-3, 4, 5)}, NewPoint(2, 1, 7)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -482,12 +461,308 @@ func TestTranslationMatrix(t *testing.T) {
 		args args
 		want *Matrix
 	}{
-		// TODO: Add test cases.
+		{
+			"standard",
+			args{2, 3, 4},
+			NewMatrix([][]float64{
+				{1, 0, 0, 2},
+				{0, 1, 0, 3},
+				{0, 0, 1, 4},
+				{0, 0, 0, 1},
+			}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := TranslationMatrix(tt.args.x, tt.args.y, tt.args.z); !reflect.DeepEqual(got, tt.want) {
+			if got := IdentityMatrix().Translate(tt.args.x, tt.args.y, tt.args.z); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("TranslationMatrix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMatrix_Get(t *testing.T) {
+	type args struct {
+		i int
+		j int
+	}
+	tests := []struct {
+		name string
+		m    Matrix
+		args args
+		want float64
+	}{
+		{
+			"standard",
+			*NewMatrix([][]float64{
+				{8, -5, 9, 2},
+				{7, 5, 6, 1},
+				{-6, 0, 9, 6},
+				{-3, 0, -9, -4},
+			}),
+			args{3, 2},
+			-9,
+		},
+		{
+			"standard",
+			*NewMatrix([][]float64{
+				{8, -5, 9, 2},
+				{7, 5, 6, 1},
+				{-6, 0, 9, 6},
+				{-3, 0, -9, -4},
+			}),
+			args{0, 0},
+			8,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.m.Get(tt.args.i, tt.args.j); got != tt.want {
+				t.Errorf("Matrix.Get() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMatrix_Equal(t *testing.T) {
+	type args struct {
+		m1 *Matrix
+	}
+	tests := []struct {
+		name string
+		m    Matrix
+		args args
+		want bool
+	}{
+		{
+			"standard",
+			*NewMatrix([][]float64{
+				{8, -5, 9, 2},
+				{7, 5, 6, 1},
+				{-6, 0, 9, 6},
+				{-3, 0, -9, -4},
+			}),
+			args{NewMatrix([][]float64{
+				{8, -5, 9, 2},
+				{7, 5, 6, 1},
+				{-6, 0, 9, 6},
+				{-3, 0, -9, -4},
+			})},
+			true,
+		},
+		{
+			"different sizes",
+			*NewMatrix([][]float64{
+				{8, -5, 9, 2},
+				{7, 5, 6, 1},
+				{-6, 0, 9, 6},
+				{-3, 0, -9, -4},
+			}),
+			args{NewMatrix([][]float64{
+				{7, 5, 6, 1},
+				{-6, 0, 9, 6},
+				{-3, 0, -9, -4},
+			})},
+			false,
+		},
+		{
+			"different elements",
+			*NewMatrix([][]float64{
+				{8, -5, 9, 2},
+				{7, 5, 6, 1},
+				{-6, 0, 9, 6},
+				{-3, 0, -9, -4},
+			}),
+			args{NewMatrix([][]float64{
+				{8, -5, 9, 2},
+				{7, 5, 6, 1},
+				{-6, 0, 45, 6},
+				{-3, 0, -9, -4},
+			})},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.m.Equal(tt.args.m1); got != tt.want {
+				t.Errorf("Matrix.Equal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMatrix_String(t *testing.T) {
+	tests := []struct {
+		name string
+		m    Matrix
+		want string
+	}{
+		{
+			"standard",
+			*NewMatrix([][]float64{
+				{1, 2, 3, 4},
+				{5, 6, 7, 8},
+				{9, 10, 11, 12},
+				{13, 14, 15, 16},
+			}),
+			"Matrix([\n    [1.000000, 2.000000, 3.000000, 4.000000],\n    [5.000000, 6.000000, 7.000000, 8.000000],\n    [9.000000, 10.000000, 11.000000, 12.000000],\n    [13.000000, 14.000000, 15.000000, 16.000000]\n])",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.m.String(); got != tt.want {
+				t.Errorf("Matrix.String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestScalingMatrix(t *testing.T) {
+	type args struct {
+		x float64
+		y float64
+		z float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Matrix
+	}{
+		{
+			"standard",
+			args{2, 3, 4},
+			NewMatrix([][]float64{
+				{2, 0, 0, 0},
+				{0, 3, 0, 0},
+				{0, 0, 4, 0},
+				{0, 0, 0, 1},
+			})},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IdentityMatrix().Scale(tt.args.x, tt.args.y, tt.args.z); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ScalingMatrix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRotateXMatrix(t *testing.T) {
+	type args struct {
+		r float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Matrix
+	}{
+		{
+			"standard",
+			args{math.Pi / 4},
+			NewMatrix([][]float64{
+				{1, 0, 0, 0},
+				{0, math.Cos(math.Pi / 4), -math.Sin(math.Pi / 4), 0},
+				{0, math.Sin(math.Pi / 4), math.Cos(math.Pi / 4), 0},
+				{0, 0, 0, 1},
+			}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IdentityMatrix().RotateX(tt.args.r); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RotateXMatrix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRotateYMatrix(t *testing.T) {
+	type args struct {
+		r float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Matrix
+	}{
+		{
+			"standard",
+			args{math.Pi / 4},
+			NewMatrix([][]float64{
+				{math.Cos(math.Pi / 4), 0, math.Sin(math.Pi / 4), 0},
+				{0, 1, 0, 0},
+				{-math.Sin(math.Pi / 4), 0, math.Cos(math.Pi / 4), 0},
+				{0, 0, 0, 1},
+			}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IdentityMatrix().RotateY(tt.args.r); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RotateYMatrix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRotateZMatrix(t *testing.T) {
+	type args struct {
+		r float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Matrix
+	}{
+		{
+			"standard",
+			args{math.Pi / 4},
+			NewMatrix([][]float64{
+				{math.Cos(math.Pi / 4), -math.Sin(math.Pi / 4), 0, 0},
+				{math.Sin(math.Pi / 4), math.Cos(math.Pi / 4), 0, 0},
+				{0, 0, 1, 0},
+				{0, 0, 0, 1},
+			}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IdentityMatrix().RotateZ(tt.args.r); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RotateZMatrix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestShear(t *testing.T) {
+	type args struct {
+		xy float64
+		xz float64
+		yx float64
+		yz float64
+		zx float64
+		zy float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Matrix
+	}{
+		{
+			"standard",
+			args{1, 2, 3, 4, 5, 6},
+			NewMatrix([][]float64{
+				{1, 1, 2, 0},
+				{3, 1, 4, 0},
+				{5, 6, 1, 0},
+				{0, 0, 0, 1},
+			}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IdentityMatrix().Shear(tt.args.xy, tt.args.xz, tt.args.yx, tt.args.yz, tt.args.zx, tt.args.zy); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Shear() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -279,8 +279,8 @@ func TestTuple_MatrixMultiply(t *testing.T) {
 		args args
 		want *Tuple
 	}{
-		{"standard", *NewPoint(-3, 4, 5), args{TranslationMatrix(5, -3, 2)}, NewPoint(2, 1, 7)},
-		{"inverse", *NewPoint(-3, 4, 5), args{TranslationMatrix(5, -3, 2).Invert()}, NewPoint(-8, 7, 3)},
+		{"standard", *NewPoint(-3, 4, 5), args{IdentityMatrix().Translate(5, -3, 2)}, NewPoint(2, 1, 7)},
+		{"inverse", *NewPoint(-3, 4, 5), args{IdentityMatrix().Translate(5, -3, 2).Invert()}, NewPoint(-8, 7, 3)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -309,6 +309,30 @@ func TestTuple_Translate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.t.Translate(tt.args.x, tt.args.y, tt.args.z); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Tuple.Translate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTuple_Scale(t *testing.T) {
+	type args struct {
+		x float64
+		y float64
+		z float64
+	}
+	tests := []struct {
+		name string
+		t    Tuple
+		args args
+		want *Tuple
+	}{
+		{"standard", *NewPoint(-4, 6, 8), args{2, 3, 4}, NewPoint(-8, 18, 32)},
+		{"Reflect", *NewPoint(2, 3, 4), args{-1, 1, 1}, NewPoint(-2, 3, 4)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.t.Scale(tt.args.x, tt.args.y, tt.args.z); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Tuple.Scale() = %v, want %v", got, tt.want)
 			}
 		})
 	}
