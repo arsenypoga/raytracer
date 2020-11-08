@@ -109,3 +109,13 @@ func (t Tuple) Cross(t1 *Tuple) *Tuple {
 		t.X*t1.Y-t.Y*t1.X,
 	)
 }
+
+// MatrixMultiply Multiplies Tuple by matrix
+func (t Tuple) MatrixMultiply(m *Matrix) *Tuple {
+	return m.TupleMultiply(&t)
+}
+
+// Translate translates tuple by x, y, z
+func (t Tuple) Translate(x, y, z float64) *Tuple {
+	return t.MatrixMultiply(TranslationMatrix(x, y, z))
+}

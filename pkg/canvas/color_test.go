@@ -96,6 +96,8 @@ func TestColor_Clamp(t *testing.T) {
 		want *Color
 	}{
 		{"standard", Color{1.5, -0.3, 5}, &Color{1., 0, 1.}},
+		{"Test values greater than 1", Color{1.5, 3.3, 5}, &Color{1., 1., 1.}},
+		{"Test values less than 1", Color{-1, -0.1, -3.}, &Color{0, 0, 0}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

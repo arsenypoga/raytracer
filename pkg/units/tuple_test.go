@@ -240,7 +240,7 @@ func TestTuple_Dot(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.t.Dot(tt.args.t1); !Equal(got, tt.want) {
+			if got := tt.t.Dot(tt.args.t1); !FloatEqual(got, tt.want) {
 				t.Errorf("Tuple.Dot() = %v, want %v", got, tt.want)
 			}
 		})
@@ -264,6 +264,51 @@ func TestTuple_Cross(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.t.Cross(tt.args.t1); !TupleEqual(got, tt.want) {
 				t.Errorf("Tuple.Cross() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTuple_MatrixMultiply(t *testing.T) {
+	type args struct {
+		m *Matrix
+	}
+	tests := []struct {
+		name string
+		t    Tuple
+		args args
+		want *Tuple
+	}{
+		{"standard", *NewPoint(-3, 4, 5), args{TranslationMatrix(5, -3, 2)}, NewPoint(2, 1, 7)},
+		{"inverse", *NewPoint(-3, 4, 5), args{TranslationMatrix(5, -3, 2).Invert()}, NewPoint(-8, 7, 3)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.t.MatrixMultiply(tt.args.m); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Tuple.MatrixMultiply() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTuple_Translate(t *testing.T) {
+	type args struct {
+		x float64
+		y float64
+		z float64
+	}
+	tests := []struct {
+		name string
+		t    Tuple
+		args args
+		want *Tuple
+	}{
+		{"standard", *NewPoint(-3, 4, 5), args{5, -3, 2}, NewPoint(2, 1, 7)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.t.Translate(tt.args.x, tt.args.y, tt.args.z); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Tuple.Translate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
